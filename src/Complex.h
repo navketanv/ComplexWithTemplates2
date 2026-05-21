@@ -4,15 +4,28 @@
 #include "Memory/ObjectStorage.h"
 #include <concepts>
 #include <type_traits>
-#include <utility>
 
-template<typename T1, typename T2>
+template<typename T>
+concept Arithmetic = (std::integral<std::remove_cvref_t<T>> ||
+                      std::floating_point<std::remove_cvref_t<T>>) &&
+                     !std::same_as<std::remove_cvref_t<T>, bool>;
+
+template<Arithmetic T1, Arithmetic T2>
 class Complex;
 
-template<typename T1, typename T2>
+template<typename T>
+struct IsComplex : std::false_type{};
+
+template<Arithmetic T1, Arithmetic T2>
+struct IsComplex<Complex<T1, T2>> : std::true_type{};
+
+template<typename T>
+inline constexpr bool IsComplex_v = IsComplex<std::remove_cvref_t<T>>::value;
+
+template<Arithmetic T1, Arithmetic T2>
 std::ostream& operator<<(std::ostream& os, const Complex<T1, T2>& rhs) noexcept;
 
-template<typename T1, typename T2>
+template<Arithmetic T1, Arithmetic T2>
 class Complex
 {
 private:
@@ -24,20 +37,20 @@ private:
     using Storage = ObjectStorage<ComplexData>;
 
 public:
-    template<typename U1 = T1, typename U2 = T2>
-        requires(
-            std::constructible_from<T1, U1&&> && std::constructible_from<T2, U2&&> &&
-            !(std::derived_from<std::remove_cvref_t<U1>, Complex<T1, T2>> ||
-              std::derived_from<std::remove_cvref_t<U2>, Complex<T1, T2>>)
-            )
-    Complex(U1&& real, U2&& imaginary);
-
-    template<typename U1 = T1>
+    template<Arithmetic U1 = T1, Arithmetic U2 = T2>
         requires(
             std::constructible_from<T1, U1&&> &&
-            !std::derived_from<std::remove_cvref_t<U1>, Complex<T1, T2>>
-            )
-    Complex(U1&& real);
+            std::constructible_from<T2, U2&&> &&
+            !(IsComplex_v<U1> || IsComplex_v<U2>)
+        )
+    explicit Complex(U1&& real, U2&& imaginary);
+
+    template<Arithmetic U1 = T1>
+        requires(
+            std::constructible_from<T1, U1&&> &&
+            !IsComplex_v<U1>
+        )
+    explicit Complex(U1&& real);
 
     Complex();
 
@@ -47,10 +60,15 @@ public:
     Complex& operator=(Complex&& rhs) noexcept(std::is_nothrow_move_assignable_v<Storage>);
     virtual ~Complex() noexcept;
 
-    Complex& operator+=(const Complex& rhs);
-    Complex& operator-=(const Complex& rhs);
-    Complex& operator*=(const Complex& rhs);
-    Complex& operator/=(const Complex& rhs);
+    template<Arithmetic U1, Arithmetic U2>
+    Complex& operator+=(const Complex<U1, U2>& rhs);
+    template<Arithmetic U1, Arithmetic U2>
+    Complex& operator-=(const Complex<U1, U2>& rhs);
+    template<Arithmetic U1, Arithmetic U2>
+    Complex& operator*=(const Complex<U1, U2>& rhs);
+    template<Arithmetic U1, Arithmetic U2>
+        requires(std::floating_point<T1> && std::floating_point<T2>)
+    Complex& operator/=(const Complex<U1, U2>& rhs);
 
     const T1& real() const noexcept;
     const T2& imaginary() const noexcept;
@@ -86,10 +104,10 @@ private:
     friend std::ostream& operator<< <> (std::ostream& os, const Complex<T1, T2>& rhs) noexcept;
 };
 
-template<typename U1, typename U2>
+template<Arithmetic U1, Arithmetic U2>
 Complex(U1, U2) -> Complex<U1, U2>;
 
-template<typename U1>
+template<Arithmetic U1>
 Complex(U1) -> Complex<U1, U1>;
 
 #include "Complex.tpp"

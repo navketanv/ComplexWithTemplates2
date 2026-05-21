@@ -16,3 +16,5 @@ install(TARGETS ComplexWithTemplates2
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+target_sources(ComplexWithTemplates2 PRIVATE src/Complex.tpp src/Memory/NewHandlerGuard.tpp src/Memory/ObjectStorage.tpp)

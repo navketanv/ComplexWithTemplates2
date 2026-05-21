@@ -16,6 +16,7 @@ int main()
     C4.imaginary(3.19);
     C3.imaginary(b);
     Complex C6(27);
+    Complex C7(b);
 
     return 0;
 }
