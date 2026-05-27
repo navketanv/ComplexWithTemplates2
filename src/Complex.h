@@ -6,26 +6,48 @@
 #include <type_traits>
 
 template<typename T>
+concept ClassTemplateArgumentType = (std::floating_point<std::remove_cvref_t<T>>) &&
+                     !std::same_as<std::remove_cvref_t<T>, bool>;
+
+template<typename T>
 concept Arithmetic = (std::integral<std::remove_cvref_t<T>> ||
                       std::floating_point<std::remove_cvref_t<T>>) &&
                      !std::same_as<std::remove_cvref_t<T>, bool>;
 
-template<Arithmetic T1, Arithmetic T2>
+template<ClassTemplateArgumentType T1, ClassTemplateArgumentType T2>
 class Complex;
 
 template<typename T>
 struct IsComplex : std::false_type{};
 
-template<Arithmetic T1, Arithmetic T2>
+template<ClassTemplateArgumentType T1, ClassTemplateArgumentType T2>
 struct IsComplex<Complex<T1, T2>> : std::true_type{};
 
 template<typename T>
 inline constexpr bool IsComplex_v = IsComplex<std::remove_cvref_t<T>>::value;
 
-template<Arithmetic T1, Arithmetic T2>
+template<ClassTemplateArgumentType T1, ClassTemplateArgumentType T2, ClassTemplateArgumentType U1, ClassTemplateArgumentType U2>
+auto operator+(const Complex<T1, T2>& lhs, const Complex<U1, U2>& rhs) -> Complex<std::common_type_t<T1, U1>, std::common_type_t<T2, U2>>;
+
+template<ClassTemplateArgumentType T1, ClassTemplateArgumentType T2, ClassTemplateArgumentType U1, ClassTemplateArgumentType U2>
+auto operator-(const Complex<T1, T2>& lhs, const Complex<U1, U2>& rhs) -> Complex<std::common_type_t<T1, U1>, std::common_type_t<T2, U2>>;
+
+template<ClassTemplateArgumentType T1, ClassTemplateArgumentType T2, ClassTemplateArgumentType U1, ClassTemplateArgumentType U2>
+auto operator*(const Complex<T1, T2>& lhs, const Complex<U1, U2>& rhs) -> Complex<std::common_type_t<T1, T2, U1, U2>, std::common_type_t<T1, T2, U1, U2>>;
+
+template<ClassTemplateArgumentType T1, ClassTemplateArgumentType T2, ClassTemplateArgumentType U1, ClassTemplateArgumentType U2>
+auto operator/(const Complex<T1, T2>& lhs, const Complex<U1, U2>& rhs) -> Complex<std::common_type_t<T1, T2, U1, U2>, std::common_type_t<T1, T2, U1, U2>>;
+
+template<ClassTemplateArgumentType T1, ClassTemplateArgumentType T2, ClassTemplateArgumentType U1, ClassTemplateArgumentType U2>
+bool operator==(const Complex<T1, T2>& lhs, const Complex<U1, U2>& rhs);
+
+template<ClassTemplateArgumentType T1, ClassTemplateArgumentType T2, ClassTemplateArgumentType U1, ClassTemplateArgumentType U2>
+bool operator!=(const Complex<T1, T2>& lhs, const Complex<U1, U2>& rhs);
+
+template<ClassTemplateArgumentType T1, ClassTemplateArgumentType T2>
 std::ostream& operator<<(std::ostream& os, const Complex<T1, T2>& rhs) noexcept;
 
-template<Arithmetic T1, Arithmetic T2>
+template<ClassTemplateArgumentType T1, ClassTemplateArgumentType T2>
 class Complex
 {
 private:
@@ -60,13 +82,13 @@ public:
     Complex& operator=(Complex&& rhs) noexcept(std::is_nothrow_move_assignable_v<Storage>);
     virtual ~Complex() noexcept;
 
-    template<Arithmetic U1, Arithmetic U2>
+    template<ClassTemplateArgumentType U1, ClassTemplateArgumentType U2>
     Complex& operator+=(const Complex<U1, U2>& rhs);
-    template<Arithmetic U1, Arithmetic U2>
+    template<ClassTemplateArgumentType U1, ClassTemplateArgumentType U2>
     Complex& operator-=(const Complex<U1, U2>& rhs);
-    template<Arithmetic U1, Arithmetic U2>
+    template<ClassTemplateArgumentType U1, ClassTemplateArgumentType U2>
     Complex& operator*=(const Complex<U1, U2>& rhs);
-    template<Arithmetic U1, Arithmetic U2>
+    template<ClassTemplateArgumentType U1, ClassTemplateArgumentType U2>
         requires(std::floating_point<T1> && std::floating_point<T2>)
     Complex& operator/=(const Complex<U1, U2>& rhs);
 
@@ -104,10 +126,15 @@ private:
     friend std::ostream& operator<< <> (std::ostream& os, const Complex<T1, T2>& rhs) noexcept;
 };
 
+
 template<Arithmetic U1, Arithmetic U2>
-Complex(U1, U2) -> Complex<U1, U2>;
+Complex(U1, U2) -> Complex<
+    std::conditional_t<std::integral<std::remove_cvref_t<U1>>, double, std::remove_cvref_t<U1>>,
+    std::conditional_t<std::integral<std::remove_cvref_t<U2>>, double, std::remove_cvref_t<U2>>>;
 
 template<Arithmetic U1>
-Complex(U1) -> Complex<U1, U1>;
+Complex(U1) -> Complex<
+    std::conditional_t<std::integral<std::remove_cvref_t<U1>>, double, std::remove_cvref_t<U1>>,
+    std::conditional_t<std::integral<std::remove_cvref_t<U1>>, double, std::remove_cvref_t<U1>>>;
 
 #include "Complex.tpp"
