@@ -126,15 +126,13 @@ private:
     friend std::ostream& operator<< <> (std::ostream& os, const Complex<T1, T2>& rhs) noexcept;
 };
 
+template<Arithmetic U>
+using ComplexStorageType = std::conditional_t<std::integral<std::remove_cvref_t<U>>, double, std::remove_cvref_t<U>>;
 
 template<Arithmetic U1, Arithmetic U2>
-Complex(U1, U2) -> Complex<
-    std::conditional_t<std::integral<std::remove_cvref_t<U1>>, double, std::remove_cvref_t<U1>>,
-    std::conditional_t<std::integral<std::remove_cvref_t<U2>>, double, std::remove_cvref_t<U2>>>;
+Complex(U1, U2) -> Complex<ComplexStorageType<U1>, ComplexStorageType<U2>>;
 
 template<Arithmetic U1>
-Complex(U1) -> Complex<
-    std::conditional_t<std::integral<std::remove_cvref_t<U1>>, double, std::remove_cvref_t<U1>>,
-    std::conditional_t<std::integral<std::remove_cvref_t<U1>>, double, std::remove_cvref_t<U1>>>;
+Complex(U1) -> Complex<ComplexStorageType<U1>, ComplexStorageType<U1>>;
 
 #include "Complex.tpp"
