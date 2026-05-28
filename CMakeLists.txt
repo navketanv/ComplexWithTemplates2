@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 4.3.3)
 
 project(ComplexWithTemplates2 LANGUAGES CXX)
 
